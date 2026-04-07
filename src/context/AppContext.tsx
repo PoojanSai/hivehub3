@@ -61,8 +61,17 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   const [currentUser, _setCurrentUser] = useState<User>(() => {
     const saved = localStorage.getItem('hivehub_user');
-    if (saved) return JSON.parse(saved);
-    return { id: Math.floor(Math.random() * 1000) + 10, name: 'You', email: 'you@hivehub.dev', color: '#2dd4bf' };
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      // Validate: if the saved user has a non-seeded random ID, reset to a known backend user
+      const validIds = ['1', '2', '3', '4'];
+      if (!validIds.includes(String(parsed.id))) {
+        localStorage.removeItem('hivehub_user');
+        return { id: '4', name: 'You', email: 'you@hivehub.dev', color: '#2dd4bf' };
+      }
+      return parsed;
+    }
+    return { id: '4', name: 'You', email: 'you@hivehub.dev', color: '#2dd4bf' };
   });
 
   const setCurrentUser = (u: User) => {
