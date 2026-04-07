@@ -10,7 +10,6 @@ import JoinTeamModal from './JoinTeamModal';
 /* ── Syntax Highlighting ── */
 const KEYWORDS = /\b(import|export|default|from|const|let|var|function|return|if|else|for|while|class|extends|interface|type|async|await|new|this|void|null|undefined|true|false|in|of|as|typeof|keyof|implements|readonly)\b/g;
 const STRINGS  = /(["`'])(?:(?!\1)[^\\]|\\.)*\1/g;
-const COMMENTS = /(\/\/.*|\/\*[\s\S]*?\*\/)/g;
 const JSX_TAGS = /(<\/?[A-Z][A-Za-z0-9.]*|<\/?[a-z][a-z0-9-]*)/g;
 const NUMBERS  = /\b(\d+(?:\.\d+)?(?:px|em|rem|%|vh|vw)?)\b/g;
 const TYPES_RE = /\b([A-Z][A-Za-z0-9]*)\b/g;

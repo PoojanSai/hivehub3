@@ -20,45 +20,45 @@ async function post<T>(path: string, body: unknown): Promise<T> {
 
 /* ── Response shapes from backend ── */
 export interface ApiVersion {
-  id: number;
+  id: string;
   tag: string;
   label: string;
   stable: boolean;
   content: string;
-  file_id: number;
-  created_by: number | null;
+  file_id: string;
+  created_by: string | null;
   created_at: string;
 }
 
 export interface ApiProject {
-  id: number;
+  id: string;
   name: string;
   lang: string;
-  stars: number;
-  team_id: number;
+  stars: string;
+  team_id: string;
   versions: ApiVersion[];
 }
 
 export interface ApiTeam {
-  id: number;
+  id: string;
   name: string;
   color: string;
-  members: number;
+  members: string;
   projects: ApiProject[];
 }
 
 export interface ApiFile {
-  id: number;
+  id: string;
   name: string;
   content: string;
-  project_id: number;
+  project_id: string;
   versions: ApiVersion[];
 }
 
 export interface ApiChatMessage {
-  id: number;
-  project_id: number;
-  user_id: number;
+  id: string;
+  project_id: string;
+  user_id: string;
   user_name: string;
   text: string;
   created_at: string;
@@ -67,37 +67,37 @@ export interface ApiChatMessage {
 /* ── API helpers ── */
 export const api = {
   teams: {
-    list: (user_id?: number) => get<ApiTeam[]>(`/teams${user_id ? `?user_id=${user_id}` : ''}`),
-    get: (id: number) => get<ApiTeam>(`/teams/${id}`),
-    create: (data: { name: string; color: string; owner_id: number }) =>
+    list: (user_id?: string) => get<ApiTeam[]>(`/teams${user_id ? `?user_id=${user_id}` : ''}`),
+    get: (id: string) => get<ApiTeam>(`/teams/${id}`),
+    create: (data: { name: string; color: string; owner_id: string }) =>
       post<ApiTeam>('/teams', data),
-    join: (data: { code: string; user_id: number }) =>
+    join: (data: { code: string; user_id: string }) =>
       post<ApiTeam>('/teams/join', data),
   },
   projects: {
-    create: (data: { name: string; lang: string; team_id: number }) =>
+    create: (data: { name: string; lang: string; team_id: string }) =>
       post<ApiProject>('/projects', data),
   },
   files: {
-    listByProject: (projectId: number) => get<ApiFile[]>(`/files/${projectId}`),
-    create: (data: { name: string; project_id: number; content?: string }) =>
+    listByProject: (projectId: string) => get<ApiFile[]>(`/files/${projectId}`),
+    create: (data: { name: string; project_id: string; content?: string }) =>
       post<ApiFile>('/files', data),
   },
   versions: {
-    listByFile: (fileId: number) => get<ApiVersion[]>(`/versions/${fileId}`),
-    get: (versionId: number) => get<ApiVersion>(`/versions/detail/${versionId}`),
+    listByFile: (fileId: string) => get<ApiVersion[]>(`/versions/${fileId}`),
+    get: (versionId: string) => get<ApiVersion>(`/versions/detail/${versionId}`),
     create: (data: {
-      file_id: number;
+      file_id: string;
       content: string;
       tag: string;
       label?: string;
       stable?: boolean;
-      created_by?: number;
+      created_by?: string;
     }) => post<ApiVersion>('/versions', data),
   },
   chat: {
-    list: (projectId: number) => get<ApiChatMessage[]>(`/chat/${projectId}`),
-    send: (data: { project_id: number; user_id: number; text: string }) =>
+    list: (projectId: string) => get<ApiChatMessage[]>(`/chat/${projectId}`),
+    send: (data: { project_id: string; user_id: string; text: string }) =>
       post<ApiChatMessage>('/chat', data),
   },
 };

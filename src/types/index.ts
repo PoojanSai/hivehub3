@@ -19,32 +19,33 @@ export interface FSFileNode extends FileNode {
 
 /* ─── CLOUD / TEAMS (from backend) ─── */
 export interface Version {
-  id: number;
+  id: string;
   tag: string;
   label: string;
   stable: boolean;
-  content: string;
-  file_id: number;
-  created_at: string;
+  content?: string;
+  file_id?: string;
+  created_at?: string;
   /** Computed relative date for display */
   date?: string;
 }
 
 export interface Project {
-  id: number;
+  id: string;
   name: string;
   lang: string;
   stars: number;
-  team_id: number;
+  team_id?: string;
   versions: Version[];
 }
 
 export interface Team {
-  id: number;
+  id: string;
   name: string;
   color: string;
   members: number;
   projects: Project[];
+  join_code?: string;
 }
 
 /* ─── EDITOR ─── */
@@ -58,17 +59,18 @@ export interface Tab {
   /** Active file content loaded from backend */
   content?: string;
   /** Active version id if loaded from a version */
-  versionId?: number;
+  versionId?: string;
   /** Backend file id for save/version ops */
-  fileId?: number;
+  fileId?: string;
   /** File handle for local files */
   handle?: FileSystemFileHandle;
 }
 
 export interface User {
-  id: number;
+  id: string | number;
   name: string;
   email: string;
+  color?: string;
 }
 
 export interface Collaborator {
@@ -76,7 +78,7 @@ export interface Collaborator {
   name: string;
   color: string;
   avatar: string;
-  line: number;
+  line: string;
 }
 
 export interface ChatMessage {

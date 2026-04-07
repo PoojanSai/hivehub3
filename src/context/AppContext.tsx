@@ -18,7 +18,7 @@ interface AppState {
   fetchTeams: () => Promise<void>;
   createTeam: (name: string, color: string) => Promise<any>;
   joinTeam: (code: string) => Promise<any>;
-  createProject: (name: string, lang: string, team_id: number) => Promise<any>;
+  createProject: (name: string, lang: string, team_id: string | number) => Promise<any>;
   openFile: (tab: Tab) => void;
   closeTab: (id: string) => void;
   setActiveTab: (id: string) => void;
@@ -26,17 +26,17 @@ interface AppState {
   sendMessage: (text: string) => void;
   setViewMode: (m: ViewMode) => void;
   /** Load a version's content into the active tab */
-  loadVersion: (versionId: number) => Promise<void>;
+  loadVersion: (versionId: string | number) => Promise<void>;
   /** Save current tab content as a new version */
   saveVersion: (tabId: string, content: string, tag: string) => Promise<void>;
   /** Update the content of a tab (on edit) */
   updateTabContent: (tabId: string, content: string) => void;
   /** The currently focused project ID */
-  activeProjectId: number | null;
+  activeProjectId: string | number | null;
   /** Files for the active project */
   activeProjectFiles: any[];
   /** Set the active project and load its files */
-  setActiveProject: (projectId: number) => Promise<void>;
+  setActiveProject: (projectId: string | number) => Promise<void>;
   /** File System Access API */
   localRootHandle: FileSystemDirectoryHandle | null;
   localFileTree: FileNode | null;
@@ -76,7 +76,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const fetchTeams = useCallback(async () => {
     setIsLoadingTeams(true);
     try {
-      const data = await api.teams.list(currentUser.id);
+      const data = await api.teams.list(String(currentUser.id));
       setTeams(data);
     } catch (err) {
       console.error('fetchTeams failed:', err);
@@ -86,19 +86,19 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   }, [currentUser.id]);
 
   const createTeam = async (name: string, color: string) => {
-    const team = await api.teams.create({ name, color, owner_id: currentUser.id });
+    const team = await api.teams.create({ name, color, owner_id: String(currentUser.id) });
     await fetchTeams();
     return team;
   };
 
   const joinTeam = async (code: string) => {
-    const team = await api.teams.join({ code, user_id: currentUser.id });
+    const team = await api.teams.join({ code, user_id: String(currentUser.id) });
     await fetchTeams();
     return team;
   };
 
-  const createProject = async (name: string, lang: string, team_id: number) => {
-    const project = await api.projects.create({ name, lang, team_id });
+  const createProject = async (name: string, lang: string, team_id: string | number) => {
+    const project = await api.projects.create({ name, lang, team_id: String(team_id) });
     await fetchTeams();
     return project;
   };
@@ -107,7 +107,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     fetchTeams();
   }, [fetchTeams]);
 
-  const [activeProjectId, setActiveProjectId] = useState<number | null>(null);
+  const [activeProjectId, setActiveProjectId] = useState<string | number | null>(null);
   const [activeProjectFiles, setActiveProjectFiles] = useState<any[]>([]);
   const wsRef = React.useRef<WebSocket | null>(null);
   const [cursors, setCursors] = useState<Map<string, { userId: string, userName: string, color: string, line: number, col: number, tabId: string }>>(new Map());
@@ -193,16 +193,16 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     if (wsRef.current?.readyState === WebSocket.OPEN) {
       wsRef.current.send(JSON.stringify({
         type: 'cursor',
-        userId: currentUser.id,
+        userId: String(currentUser.id),
         cursor: { userId: String(currentUser.id), userName: currentUser.name, color: (currentUser as any).color || '#2dd4bf', line, col, tabId }
       }));
     }
   }, [currentUser]);
 
-  const setActiveProject = useCallback(async (projectId: number) => {
+  const setActiveProject = useCallback(async (projectId: string | number) => {
     setActiveProjectId(projectId);
     try {
-      const files = await api.files.listByProject(projectId);
+      const files = await api.files.listByProject(String(projectId));
       setActiveProjectFiles(files);
       // Clear local tree when switching to project view
       setLocalRootHandle(null);
@@ -284,9 +284,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const loadVersion = useCallback(async (versionId: number) => {
+  const loadVersion = useCallback(async (versionId: string | number) => {
     try {
-      const version = await api.versions.get(versionId);
+      const version = await api.versions.get(String(versionId));
       
       // If we're loading a version, we might want to also focus its project
       // Note: Backend VersionOut doesn't include projectId directly, but it includes file_id.

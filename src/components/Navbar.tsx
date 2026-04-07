@@ -1,12 +1,13 @@
 import { useState, useRef, useEffect } from 'react';
 import { Bell, Settings, Search, Command, GitBranch, ChevronDown, User as UserIcon } from 'lucide-react';
 import { useApp } from '@/context/AppContext';
+import type { User } from '@/types';
 
-const MOCK_USERS = [
-  { id: 4, name: 'You',      email: 'you@hivehub.dev', initials: 'EK' },
-  { id: 1, name: 'Aisha K.', email: 'aisha@hivehub.dev', initials: 'AK' },
-  { id: 2, name: 'Rajan M.', email: 'rajan@hivehub.dev', initials: 'RM' },
-  { id: 3, name: 'Mei L.',   email: 'mei@hivehub.dev',   initials: 'ML' },
+const MOCK_USERS: (User & { initials: string })[] = [
+  { id: '4', name: 'You',      email: 'you@hivehub.dev', initials: 'EK', color: '#2dd4bf' },
+  { id: '1', name: 'Aisha K.', email: 'aisha@hivehub.dev', initials: 'AK', color: '#a78bfa' },
+  { id: '2', name: 'Rajan M.', email: 'rajan@hivehub.dev', initials: 'RM', color: '#34d399' },
+  { id: '3', name: 'Mei L.',   email: 'mei@hivehub.dev',   initials: 'ML', color: '#fb923c' },
 ];
 
 export default function Navbar() {
@@ -25,7 +26,7 @@ export default function Navbar() {
     return () => document.removeEventListener('mousedown', clickAway);
   }, []);
 
-  const curInitial = MOCK_USERS.find(u => u.id === currentUser.id)?.initials || '??';
+  const curInitial = MOCK_USERS.find(u => String(u.id) === String(currentUser.id))?.initials || '??';
 
   return (
     <header className="navbar">
@@ -100,7 +101,7 @@ export default function Navbar() {
                 {MOCK_USERS.map(user => (
                   <button 
                     key={user.id} 
-                    className={`user-item ${currentUser.id === user.id ? 'active' : ''}`}
+                    className={`user-item ${String(currentUser.id) === String(user.id) ? 'active' : ''}`}
                     onClick={() => {
                       setCurrentUser(user);
                       setProfileOpen(false);
