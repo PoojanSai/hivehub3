@@ -1,6 +1,7 @@
 /* ── Central API client ── */
 
 const BASE = import.meta.env.VITE_API_URL || '/api';
+console.log('HiveHub API Base:', BASE);
 
 async function get<T>(path: string): Promise<T> {
   const res = await fetch(`${BASE}${path}`);
