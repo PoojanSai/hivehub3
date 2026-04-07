@@ -10,11 +10,7 @@ const MOCK_USERS: (User & { initials: string })[] = [
   { id: '3', name: 'Mei L.',   email: 'mei@hivehub.dev',   initials: 'ML', color: '#fb923c' },
 ];
 
-interface NavbarProps {
-  onRunClick?: () => void;
-}
-
-export default function Navbar({ onRunClick }: NavbarProps) {
+export default function Navbar() {
   const { currentUser, setCurrentUser } = useApp();
   const [searchFocused, setSearchFocused] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
@@ -72,16 +68,6 @@ export default function Navbar({ onRunClick }: NavbarProps) {
       </div>
 
       <div className="navbar-actions">
-        <div className="nav-sep"/>
-        <button 
-          className="icon-btn" 
-          title="Run Code"
-          onClick={onRunClick}
-          style={{ color: 'var(--teal)', fontWeight: 600, gap: '4px' }}
-        >
-          <span>Run</span>
-          <span style={{ fontSize: '10px' }}>▶</span>
-        </button>
         <div className="nav-sep"/>
         <button className="icon-btn" title="Branch">
           <GitBranch size={15}/>
