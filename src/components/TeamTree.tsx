@@ -43,7 +43,7 @@ function VersionRow({ version }: VersionRowProps) {
 
   return (
     <div
-      className={`version-row ${hovered ? 'hovered' : ''}`}
+      className={`version-row ${hovered ? 'hovered' : ''}${loading ? 'loading' : ''}`}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
     >
@@ -77,23 +77,26 @@ function VersionRow({ version }: VersionRowProps) {
 }
 
 /* ── Project row ── */
+
 interface ProjectRowProps { project: Project; }
+
 function ProjectRow({ project }: ProjectRowProps) {
-  const { setActiveProject } = useApp();
+  const { setActiveProject, activeProjectId } = useApp();
   const [open, setOpen] = useState(false);
   const versions = project.versions ?? [];
 
   async function handleToggle() {
-    const next = !open;
-    setOpen(next);
-    if (next) {
-      await setActiveProject(project.id);
-    }
-  }
+  setOpen(v => !v);
+  await setActiveProject(project.id);
+}
 
   return (
     <div className="project-block">
-      <button className="project-row" onClick={handleToggle}>
+      <button 
+        className={`project-row ${activeProjectId === project.id ? 'active' : ''}`}
+        onClick={handleToggle}
+        style={{ cursor: 'pointer' }}
+      >
         <span className="proj-chevron">
           {open ? <ChevronDown size={11}/> : <ChevronRight size={11}/>}
         </span>
@@ -107,7 +110,9 @@ function ProjectRow({ project }: ProjectRowProps) {
           {versions.length === 0 && (
             <div style={{ padding: '4px 12px', color: '#64748b', fontSize: 11 }}>No versions</div>
           )}
-          {versions.map(v => <VersionRow key={v.id} version={v}/>)}
+          {versions.map((v, i) => (
+            <VersionRow key={v.id} version={v} />
+          ))}
         </div>
       )}
     </div>

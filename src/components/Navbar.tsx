@@ -3,6 +3,7 @@ import { Bell, Settings, Search, Command, GitBranch, ChevronDown, User as UserIc
 import { useApp } from '@/context/AppContext';
 import type { User } from '@/types';
 
+
 const MOCK_USERS: (User & { initials: string })[] = [
   { id: '4', name: 'You',      email: 'you@hivehub.dev', initials: 'EK', color: '#2dd4bf' },
   { id: '1', name: 'Aisha K.', email: 'aisha@hivehub.dev', initials: 'AK', color: '#a78bfa' },
@@ -11,7 +12,7 @@ const MOCK_USERS: (User & { initials: string })[] = [
 ];
 
 export default function Navbar() {
-  const { currentUser, setCurrentUser } = useApp();
+  const { currentUser, setCurrentUser, runCode } = useApp();
   const [searchFocused, setSearchFocused] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -50,25 +51,38 @@ export default function Navbar() {
       </div>
 
       <nav className="navbar-nav">
-        {['Dashboard', 'Projects', 'Teams', 'Activity'].map(item => (
-          <a key={item} href="#" className="nav-link">{item}</a>
+        {['Dashboard', 'Projects', 'Teams', 'Activity'].map((item, i) => (
+          <a key={item} href="#" className={`nav-link ${i===0 ? 'active' : ''}`}>
+            {item}
+          </a>
         ))}
       </nav>
 
       <div className={`navbar-search ${searchFocused ? 'focused' : ''}`}>
         <Search size={13} className="search-icon" />
-        <input
-          placeholder="Search files, projects, teams…"
-          onFocus={() => setSearchFocused(true)}
-          onBlur={() => setSearchFocused(false)}
-        />
+        <input 
+          placeholder="Search anything..."
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              console.log('Search:', (e.target as HTMLInputElement).value);
+            }
+          }}
+/>
         <div className="search-kbd">
           <Command size={10}/><span>K</span>
         </div>
       </div>
 
       <div className="navbar-actions">
-        <div className="nav-sep"/>
+        <button className="icon-btn">
+         🤖 AI
+
+        </button>
+        <div className="nav-sep"/><button className="run-btn" onClick={runCode}>
+          ▶ Run
+        </button>
+
+
         <button className="icon-btn" title="Branch">
           <GitBranch size={15}/>
           <span className="branch-label">main</span>
@@ -80,6 +94,7 @@ export default function Navbar() {
         <button className="icon-btn" title="Settings">
           <Settings size={15}/>
         </button>
+        
 
         <div className="profile-container" ref={dropdownRef}>
           <div 
@@ -105,7 +120,6 @@ export default function Navbar() {
                     onClick={() => {
                       setCurrentUser(user);
                       setProfileOpen(false);
-                      window.location.reload(); // Quick reset of all components to fetch new user data
                     }}
                   >
                     <div className="user-item-avatar">

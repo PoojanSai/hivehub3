@@ -44,6 +44,10 @@ interface AppState {
   openLocalFile: (node: FileNode) => Promise<void>;
   broadcastCursor: (tabId: string, line: number, col: number) => void;
   cursors: Map<string, { userId: string, userName: string, color: string, line: number, col: number, tabId: string }>;
+  terminalOpen: boolean;
+  terminalOutput: string[];
+  runCode: () => void;
+  closeTerminal: () => void;
 }
 
 const Ctx = createContext<AppState | null>(null);
@@ -52,6 +56,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [viewMode, setViewMode] = useState<ViewMode>('welcome');
   const [tabs, setTabs] = useState<Tab[]>([]);
   const [activeTabId, setActiveTabId] = useState<string | null>(null);
+  const [terminalOpen, setTerminalOpen] = useState(false);
+  const [terminalOutput, setTerminalOutput] = useState<string[]>([]);
   const [chatOpen, setChatOpen] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([
     { userId: 'c1', userName: 'Aisha K.',  color: '#a78bfa', text: 'I pushed the nav fix 🔧', timestamp: Date.now() - 180000 },
@@ -60,6 +66,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   ]);
 
   const [currentUser, _setCurrentUser] = useState<User>(() => {
+    
     const saved = localStorage.getItem('hivehub_user');
     if (saved) {
       const parsed = JSON.parse(saved);
@@ -350,6 +357,26 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     }
   }, [tabs]);
 
+  const runCode = useCallback(() => {
+    setTerminalOpen(true);
+    const activeTab = tabs.find(t => t.id === activeTabId);
+    if (!activeTab) {
+      setTerminalOutput(["❌ No file is open"]);
+      return;
+    }
+    setTerminalOutput([
+      `▶ Running ${activeTab.name}`,
+      "--------------------",
+      "",
+      "Hello World (simulated output)",
+      "Execution completed ✅"
+    ]);
+  }, [tabs, activeTabId]);
+
+  const closeTerminal = useCallback(() => {
+    setTerminalOpen(false);
+  }, []);
+
   return (
     <Ctx.Provider value={{
       viewMode, tabs, activeTabId, chatOpen, messages, collaborators: COLLABORATORS,
@@ -359,6 +386,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       localRootHandle, localFileTree, openDirectory, openLocalFile,
       teams, isLoadingTeams, fetchTeams, createTeam, createProject, 
       currentUser, setCurrentUser, joinTeam, broadcastCursor, cursors,
+      terminalOpen, terminalOutput, runCode, closeTerminal,
     }}>
       {children}
     </Ctx.Provider>

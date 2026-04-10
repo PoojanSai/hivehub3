@@ -10,7 +10,9 @@ export default function SidebarRight() {
     (a, t) => a + (t.projects?.reduce((b: number, p: any) => b + (p.versions?.length ?? 0), 0) ?? 0),
     0
   );
-
+const used = 2.4;
+const total = 10;
+const percent = (used / total) * 100;
   return (
     <aside className="sidebar sidebar-right">
       {/* Header */}
@@ -19,13 +21,19 @@ export default function SidebarRight() {
           <Cloud size={12}/>
           <span>Cloud Projects</span>
         </div>
-        <button className="upload-btn">
+        <button 
+          className="upload-btn"
+          onClick={() => {
+            console.log("Upload project clicked");
+          }}
+        >
           <Upload size={11}/>
           <span>Upload</span>
         </button>
       </div>
 
       {/* Stats row */}
+      
       <div className="cloud-stats">
         <div className="cloud-stat">
           <span className="stat-num">{isLoadingTeams ? '…' : teams.length}</span>
@@ -39,7 +47,12 @@ export default function SidebarRight() {
           <span className="stat-num">{isLoadingTeams ? '…' : totalVersions}</span>
           <span className="stat-label">Versions</span>
         </div>
+        
       </div>
+      <div style={{ padding: 10, fontSize: 11, color: '#64748b' }}>
+        Last sync: just now
+      </div>
+      
 
       {/* Tree */}
       <div className="sidebar-scroll">
@@ -64,10 +77,10 @@ export default function SidebarRight() {
         <div className="storage-bar">
           <div className="storage-label">
             <span>Storage</span>
-            <span>2.4 GB / 10 GB</span>
+            <span>{used} GB / {total} GB</span>
           </div>
           <div className="storage-track">
-            <div className="storage-fill" style={{ width: '24%' }}/>
+            <div className="storage-fill" style={{ width: `${percent}%` }}/>
           </div>
         </div>
       </div>

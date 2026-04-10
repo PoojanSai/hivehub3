@@ -4,6 +4,7 @@ import {
   FolderOpen, Plus, Terminal, Loader2, Users,
 } from 'lucide-react';
 import { useApp } from '@/context/AppContext';
+import Editor from '@monaco-editor/react';
 import CreateProjectModal from './CreateProjectModal';
 import JoinTeamModal from './JoinTeamModal';
 
@@ -14,38 +15,7 @@ const JSX_TAGS = /(<\/?[A-Z][A-Za-z0-9.]*|<\/?[a-z][a-z0-9-]*)/g;
 const NUMBERS  = /\b(\d+(?:\.\d+)?(?:px|em|rem|%|vh|vw)?)\b/g;
 const TYPES_RE = /\b([A-Z][A-Za-z0-9]*)\b/g;
 
-function highlight(line: string): React.ReactNode {
-  if (line.trim().startsWith('//') || line.trim().startsWith('*') || line.trim().startsWith('/*')) {
-    return <span style={{ color: '#4a6278', fontStyle: 'italic' }}>{line}</span>;
-  }
-  if (line.trim().startsWith('#')) {
-    return <span style={{ color: '#4a6278', fontStyle: 'italic' }}>{line}</span>;
-  }
-  const parts: React.ReactNode[] = [];
-  let key = 0;
 
-  function push(text: string) {
-    if (!text) return;
-    const colored = text
-      .replace(KEYWORDS, m => `\x00k${m}\x01`)
-      .replace(TYPES_RE, m => `\x00t${m}\x01`)
-      .replace(STRINGS,  m => `\x00s${m}\x01`)
-      .replace(NUMBERS,  m => `\x00n${m}\x01`)
-      .replace(JSX_TAGS, m => `\x00j${m}\x01`);
-
-    const tokens = colored.split(/(\x00[ktsnjr][^\x01]*\x01)/);
-    tokens.forEach(tok => {
-      if      (tok.startsWith('\x00k')) parts.push(<span key={key++} style={{ color: '#c084fc' }}>{tok.slice(2, -1)}</span>);
-      else if (tok.startsWith('\x00t')) parts.push(<span key={key++} style={{ color: '#34d399' }}>{tok.slice(2, -1)}</span>);
-      else if (tok.startsWith('\x00s')) parts.push(<span key={key++} style={{ color: '#fbbf24' }}>{tok.slice(2, -1)}</span>);
-      else if (tok.startsWith('\x00n')) parts.push(<span key={key++} style={{ color: '#fb923c' }}>{tok.slice(2, -1)}</span>);
-      else if (tok.startsWith('\x00j')) parts.push(<span key={key++} style={{ color: '#2dd4bf' }}>{tok.slice(2, -1)}</span>);
-      else parts.push(<span key={key++}>{tok}</span>);
-    });
-  }
-  push(line);
-  return <>{parts}</>;
-}
 
 /* ── Welcome Screen ── */
 function WelcomeView() {
@@ -138,9 +108,9 @@ function EditorView() {
   const {
     tabs, activeTabId, closeTab, setActiveTab,
     chatOpen, toggleChat, messages, sendMessage,
-    saveVersion, updateTabContent, broadcastCursor, cursors,
+    saveVersion, updateTabContent, 
   } = useApp();
-
+  const [showTerminal, setShowTerminal] = useState(false);
   const activeTab = tabs.find(t => t.id === activeTabId);
 
   // The displayed lines — use tab content if available, else empty
@@ -153,7 +123,7 @@ function EditorView() {
   const [saveTag, setSaveTag] = useState('');
   const [showSavePrompt, setShowSavePrompt] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -169,15 +139,7 @@ function EditorView() {
     if (activeTabId) updateTabContent(activeTabId, e.target.value);
   }
 
-  function handleTextareaCursor(e: React.SyntheticEvent<HTMLTextAreaElement>) {
-    const el = e.currentTarget;
-    const text = el.value.slice(0, el.selectionStart);
-    const lineNum = text.split('\n').length;
-    const colNum = text.split('\n').pop()!.length + 1;
-    setCursorLine(lineNum);
-    setCursorCol(colNum);
-    if (activeTabId) broadcastCursor(activeTabId, lineNum, colNum);
-  }
+
 
   async function handleSave() {
     if (!activeTabId || !activeTab?.fileId) {
@@ -279,82 +241,13 @@ function EditorView() {
           {activeTab ? (
             <div className="code-scroll" style={{ position: 'relative' }}>
               {/* Syntax-highlighted display layer */}
-              <div
-                aria-hidden="true"
-             style={{
-  position: 'absolute',
-  inset: 0,
-  pointerEvents: 'none',
-  fontFamily: "'JetBrains Mono', monospace",
-  fontSize: 13,
-  lineHeight: '22px',
-  padding: '12px 12px 12px 52px',
-  letterSpacing: '0px',
-  zIndex: 1,
-}}
-              >
-                {lines.map((line, i) => {
-                  const lineNum = i + 1;
-                  return (
-                    <div
-                      key={lineNum}
-                      className="code-line"
-                    >
-                      <span className="line-num">{lineNum}</span>
-                      <span className="line-content">{highlight(line)}</span>
-                    </div>
-                  );
-                })}
-              </div>
+ 
 
               {/* Remote Cursors layer */}
-              {Array.from(cursors.values()).map(c => {
-                if (c.tabId !== activeTabId) return null;
-                const top = 12 + (c.line - 1) * 22;
-                const left = 52 + (c.col - 1) * 7.8; // Approx 7.8px per char in 13px JetBrains Mono
-                return (
-                  <div key={c.userId} style={{
-                    position: 'absolute', top, left, width: 2, height: 18, background: c.color, zIndex: 3, transition: 'all 0.1s linear'
-                  }}>
-                    <div style={{
-                      position: 'absolute', top: -18, left: -6, background: c.color, color: '#fff', fontSize: 10,
-                      padding: '2px 6px', borderRadius: 4, whiteSpace: 'nowrap', opacity: 0.8,
-                    }}>
-                      {c.userName}
-                    </div>
-                  </div>
-                );
-              })}
+
 
               {/* Actual editable textarea — transparent, sits on top */}
-              <textarea
-                ref={textareaRef}
-                value={activeTab.content ?? ''}
-                onChange={handleTextareaChange}
-                onSelect={handleTextareaCursor}
-                onClick={handleTextareaCursor}
-                onKeyUp={handleTextareaCursor}
-                spellCheck={false}
-style={{
-  position: 'relative',
-  zIndex: 2,
-  width: '100%',
-  minHeight: '100%',
-  background: 'transparent',
-  color: 'transparent',
-  caretColor: '#2dd4bf',
-  border: 'none',
-  outline: 'none',
-  resize: 'none',
-  fontFamily: "'JetBrains Mono', monospace",
-  fontSize: 13,
-  lineHeight: '22px',
-  padding: '12px 12px 12px 52px',
-  letterSpacing: '0px',
-  whiteSpace: 'pre',
-  overflowWrap: 'normal',
-}}
-              />
+
             </div>
           ) : (
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: '#64748b', fontSize: 13 }}>
@@ -362,6 +255,22 @@ style={{
             </div>
           )}
         </div>
+        <Editor
+  height="100%"
+language={
+  activeTab?.ext === 'tsx' ? 'typescript' :
+  activeTab?.ext === 'ts' ? 'typescript' :
+  activeTab?.ext === 'js' ? 'javascript' :
+  activeTab?.ext === 'py' ? 'python' :
+  'javascript'
+}  value={activeTab?.content || ""}
+  onChange={(value) => {
+    if (activeTabId && value !== undefined) {
+      updateTabContent(activeTabId, value);
+    }
+  }}
+  theme="vs-dark"
+/>
 
         {/* Chat panel */}
         {chatOpen && (
@@ -397,6 +306,17 @@ style={{
           </div>
         )}
       </div>
+      {showTerminal && (
+        <div className="terminal-box">
+          <div className="terminal-header">
+            <span>Output</span>
+            <button onClick={() => setShowTerminal(false)}>X</button>
+          </div>
+          <div className="terminal-body">
+            AI Output will come here...
+          </div>
+        </div>
+      )}
 
       {/* Status bar */}
       <div className="status-bar">

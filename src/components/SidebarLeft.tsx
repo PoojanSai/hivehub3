@@ -48,7 +48,17 @@ export default function SidebarLeft() {
           <button className="icon-btn-sm" title="Open Local Folder" onClick={handleOpenFolder}>
             {loading ? <Loader2 size={13} className="animate-spin"/> : <FolderOpen size={13}/>}
           </button>
-          <button className="icon-btn-sm" title="New File"><FilePlus size={13}/></button>
+          <button 
+            className="icon-btn-sm" 
+            title="New File"
+            onClick={() => {
+              const name = prompt("Enter file name");
+              if (!name) return;
+             console.log("Create file:", name);
+            }}
+          >
+            <FilePlus size={13}/>
+          </button>
           <button className="icon-btn-sm" title="New Folder"><FolderPlus size={13}/></button>
           <button className="icon-btn-sm" title="Refresh"><RefreshCw size={12}/></button>
         </div>
@@ -70,7 +80,8 @@ export default function SidebarLeft() {
           <div style={{ padding: '16px', borderBottom: activeProjectId ? '1px solid var(--border)' : 'none' }}>
             {(!activeProjectId && !localFileTree) && (
               <p style={{ color: '#64748b', fontSize: 11, fontStyle: 'italic', marginBottom: 12, textAlign: 'center' }}>
-                Open a local folder or select a cloud project.
+                No files loaded 🚫  
+                Click "Open Folder" to start coding
               </p>
             )}
             <button className="upload-btn" style={{ width: '100%', justifyContent: 'center' }} onClick={handleOpenFolder}>
@@ -90,14 +101,14 @@ export default function SidebarLeft() {
             <div className="workspace-root">
               <span className="root-name">{rootNode.name}</span>
             </div>
-            <FileTree root={rootNode}/>
+            <FileTree root={rootNode} filter={filter}/>
           </div>
         )}
       </div>
 
       {/* Footer */}
       <div className="sidebar-footer">
-        <span>12 files · 3 folders</span>
+        <span>{activeProjectFiles.length} files</span>
         <div className="sync-status">
           <span className="sync-dot"/>
           <span>Synced</span>

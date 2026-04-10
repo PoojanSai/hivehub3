@@ -20,6 +20,7 @@ export default function CreateProjectModal({ onClose }: Props) {
   const [loading, setLoading] = useState(false);
 
   async function handleCreateTeam() {
+    if (loading) return;
     if (!teamName.trim()) return;
     setLoading(true);
     try {
@@ -27,6 +28,7 @@ export default function CreateProjectModal({ onClose }: Props) {
       if (team && team.id) {
         setSelectedTeamId(team.id);
         setStep('project-details');
+        setTeamName('');
       } else {
         alert('Failed to create team: Invalid response from server');
       }
@@ -39,6 +41,7 @@ export default function CreateProjectModal({ onClose }: Props) {
   }
 
   async function handleCreateProject() {
+    if (loading) return;
     if (!projectName.trim() || !selectedTeamId) return;
     setLoading(true);
     try {
@@ -112,14 +115,22 @@ export default function CreateProjectModal({ onClose }: Props) {
               <div className="form-group">
                 <label>Team Name</label>
                 <input 
-                  autoFocus
-                  placeholder="e.g. Design System Team" 
-                  value={teamName}
-                  onChange={e => setTeamName(e.target.value)}
-                />
+  autoFocus
+  placeholder="e.g. Design System Team" 
+  value={teamName}
+  onChange={e => setTeamName(e.target.value)}
+  disabled={loading}
+  onKeyDown={(e) => {
+    if (e.key === 'Enter') handleCreateTeam();
+  }}
+/>
               </div>
               <div className="modal-footer">
-                <button className="btn-primary" onClick={handleCreateTeam} disabled={loading}>
+                <button 
+  className="btn-primary" 
+  onClick={handleCreateTeam} 
+  disabled={loading || !teamName.trim()}
+>
                   {loading ? <Loader2 size={14} className="animate-spin"/> : 'Create Team & Continue'}
                 </button>
               </div>
@@ -134,15 +145,23 @@ export default function CreateProjectModal({ onClose }: Props) {
               <div className="form-group">
                 <label>Project Name</label>
                 <input 
-                  autoFocus
-                  placeholder="e.g. HiveHub Pro" 
-                  value={projectName}
-                  onChange={e => setProjectName(e.target.value)}
-                />
+  autoFocus
+  placeholder="e.g. HiveHub Pro" 
+  value={projectName}
+  onChange={e => setProjectName(e.target.value)}
+  disabled={loading}
+  onKeyDown={(e) => {
+    if (e.key === 'Enter') handleCreateProject();
+  }}
+/>
               </div>
               <div className="form-group">
                 <label>Language / Stack</label>
-                <select value={projectLang} onChange={e => setProjectLang(e.target.value)}>
+                <select 
+  value={projectLang} 
+  onChange={e => setProjectLang(e.target.value)}
+  disabled={loading}
+>
                   <option>TypeScript</option>
                   <option>Python</option>
                   <option>Go</option>
@@ -150,7 +169,11 @@ export default function CreateProjectModal({ onClose }: Props) {
                 </select>
               </div>
               <div className="modal-footer">
-                <button className="btn-primary" onClick={handleCreateProject} disabled={loading}>
+                <button 
+  className="btn-primary" 
+  onClick={handleCreateProject} 
+  disabled={loading || !projectName.trim()}
+>
                   {loading ? <Loader2 size={14} className="animate-spin"/> : 'Create Project'}
                 </button>
               </div>
