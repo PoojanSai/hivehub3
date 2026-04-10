@@ -110,7 +110,7 @@ function ProjectRow({ project }: ProjectRowProps) {
           {versions.length === 0 && (
             <div style={{ padding: '4px 12px', color: '#64748b', fontSize: 11 }}>No versions</div>
           )}
-          {versions.map((v, i) => (
+          {versions.map((v) => (
             <VersionRow key={v.id} version={v} />
           ))}
         </div>

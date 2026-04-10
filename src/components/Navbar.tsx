@@ -13,7 +13,7 @@ const MOCK_USERS: (User & { initials: string })[] = [
 
 export default function Navbar() {
   const { currentUser, setCurrentUser, runCode } = useApp();
-  const [searchFocused, setSearchFocused] = useState(false);
+  const [searchFocused] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 

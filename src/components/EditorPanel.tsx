@@ -9,11 +9,11 @@ import CreateProjectModal from './CreateProjectModal';
 import JoinTeamModal from './JoinTeamModal';
 
 /* ── Syntax Highlighting ── */
-const KEYWORDS = /\b(import|export|default|from|const|let|var|function|return|if|else|for|while|class|extends|interface|type|async|await|new|this|void|null|undefined|true|false|in|of|as|typeof|keyof|implements|readonly)\b/g;
-const STRINGS  = /(["`'])(?:(?!\1)[^\\]|\\.)*\1/g;
-const JSX_TAGS = /(<\/?[A-Z][A-Za-z0-9.]*|<\/?[a-z][a-z0-9-]*)/g;
-const NUMBERS  = /\b(\d+(?:\.\d+)?(?:px|em|rem|%|vh|vw)?)\b/g;
-const TYPES_RE = /\b([A-Z][A-Za-z0-9]*)\b/g;
+// const KEYWORDS = /\b(import|export|default|from|const|let|var|function|return|if|else|for|while|class|extends|interface|type|async|await|new|this|void|null|undefined|true|false|in|of|as|typeof|keyof|implements|readonly)\b/g;
+// const STRINGS  = /(["`'])(?:(?!\1)[^\\]|\\.)*\1/g;
+// const JSX_TAGS = /(<\/?[A-Z][A-Za-z0-9.]*|<\/?[a-z][a-z0-9-]*)/g;
+// const NUMBERS  = /\b(\d+(?:\.\d+)?(?:px|em|rem|%|vh|vw)?)\b/g;
+// const TYPES_RE = /\b([A-Z][A-Za-z0-9]*)\b/g;
 
 
 
@@ -117,8 +117,8 @@ function EditorView() {
   const lines = (activeTab?.content ?? '').split('\n');
 
   const [inputMsg, setInputMsg] = useState('');
-  const [cursorLine, setCursorLine] = useState(1);
-  const [cursorCol, setCursorCol] = useState(1);
+  const [cursorLine] = useState(1);
+  const [cursorCol] = useState(1);
   const [saving, setSaving] = useState(false);
   const [saveTag, setSaveTag] = useState('');
   const [showSavePrompt, setShowSavePrompt] = useState(false);
@@ -135,9 +135,9 @@ function EditorView() {
     setInputMsg('');
   }
 
-  function handleTextareaChange(e: React.ChangeEvent<HTMLTextAreaElement>) {
-    if (activeTabId) updateTabContent(activeTabId, e.target.value);
-  }
+  // function handleTextareaChange(e: React.ChangeEvent<HTMLTextAreaElement>) {
+  //   if (activeTabId) updateTabContent(activeTabId, e.target.value);
+  // }
 
 
 
