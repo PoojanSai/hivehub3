@@ -1,8 +1,8 @@
 import sys
-sys.path.append('backend')
-from app.db.database import SessionLocal
-from app.services import team_service
-from app.schemas.team import TeamCreate
+sys.path.append('backend_ignore')
+from backend_ignore.app.db.database import SessionLocal
+from backend_ignore.app.services import team_service
+from backend_ignore.app.schemas.team import TeamCreate
 
 db = SessionLocal()
 try:

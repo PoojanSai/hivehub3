@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useCallback } from 'react';
 import type { Tab, ChatMessage, ViewMode, Collaborator, FileNode, User } from '@/types';
 import { api } from '@/lib/api';
+import { GoogleGenerativeAI } from "@google/generative-ai";
 
 const COLLABORATORS: Collaborator[] = [];
 
@@ -13,8 +14,7 @@ interface AppState {
   collaborators: Collaborator[];
   teams: any[];
   isLoadingTeams: boolean;
-  currentUser: User;
-  setCurrentUser: (u: User) => void;
+  currentUser: User | null;
   fetchTeams: () => Promise<void>;
   createTeam: (name: string, color: string) => Promise<any>;
   joinTeam: (code: string) => Promise<any>;
@@ -47,7 +47,19 @@ interface AppState {
   terminalOpen: boolean;
   terminalOutput: string[];
   runCode: () => void;
+  predictOutput: () => Promise<void>;
   closeTerminal: () => void;
+  sendTerminalCommand: (cmd: string) => void;
+  sidebarLeftWidth: number;
+  setSidebarLeftWidth: (w: number) => void;
+  sidebarRightWidth: number;
+  setSidebarRightWidth: (w: number) => void;
+  terminalHeight: number;
+  setTerminalHeight: (h: number) => void;
+  isGuest: boolean;
+  login: (userId: string) => void;
+  logout: () => void;
+  continueAsGuest: () => void;
 }
 
 const Ctx = createContext<AppState | null>(null);
@@ -65,31 +77,78 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     { userId: 'c3', userName: 'Mei L.',   color: '#fb923c', text: 'Can someone check line 24?', timestamp: Date.now() - 20000 },
   ]);
 
-  const [currentUser, _setCurrentUser] = useState<User>(() => {
-    
+  const [currentUser, setCurrentUser] = useState<User | null>(() => {
     const saved = localStorage.getItem('hivehub_user');
     if (saved) {
-      const parsed = JSON.parse(saved);
-      // Validate: if the saved user has a non-seeded random ID, reset to a known backend user
-      const validIds = ['1', '2', '3', '4'];
-      if (!validIds.includes(String(parsed.id))) {
-        localStorage.removeItem('hivehub_user');
-        return { id: '4', name: 'You', email: 'you@hivehub.dev', color: '#2dd4bf' };
+      try {
+        return JSON.parse(saved);
+      } catch (e) {
+        return null;
       }
-      return parsed;
     }
-    return { id: '4', name: 'You', email: 'you@hivehub.dev', color: '#2dd4bf' };
+    return null;
   });
 
-  const setCurrentUser = (u: User) => {
-    localStorage.setItem('hivehub_user', JSON.stringify(u));
-    _setCurrentUser(u);
+  const [isGuest, setIsGuest] = useState(() => {
+    return localStorage.getItem('hivehub_guest') === 'true';
+  });
+
+  const login = (userId: string) => {
+    // Mock login based on known users
+    const users: Record<string, User> = {
+      '1': { id: '1', name: 'Aisha K.', email: 'aisha@hivehub.dev' },
+      '2': { id: '2', name: 'Rajan M.', email: 'rajan@hivehub.dev' },
+      '3': { id: '3', name: 'Mei L.',   email: 'mei@hivehub.dev' },
+      '4': { id: '4', name: 'You',      email: 'you@hivehub.dev' },
+    };
+    const user = users[userId] || { id: userId, name: 'User', email: 'user@hivehub.dev' };
+    localStorage.setItem('hivehub_user', JSON.stringify(user));
+    localStorage.removeItem('hivehub_guest');
+    
+    // Clear previous state before reload
+    setTeams([]);
+    setActiveProjectId(null);
+    setActiveProjectFiles([]);
+    
+    setCurrentUser(user);
+    setIsGuest(false);
+  };
+
+  const logout = () => {
+    localStorage.removeItem('hivehub_user');
+    localStorage.removeItem('hivehub_guest');
+    
+    // Hard clear states
+    setTeams([]);
+    setActiveProjectId(null);
+    setActiveProjectFiles([]);
+    setTabs([]);
+    setActiveTabId(null);
+    
+    setCurrentUser(null);
+    setIsGuest(false);
+    
+    // Force reload for a complete fresh start as requested
+    window.location.href = '/login';
+  };
+
+  const continueAsGuest = () => {
+    localStorage.setItem('hivehub_guest', 'true');
+    localStorage.removeItem('hivehub_user');
+    
+    setTeams([]);
+    setActiveProjectId(null);
+    setActiveProjectFiles([]);
+    
+    setIsGuest(true);
+    setCurrentUser(null);
   };
 
   const [teams, setTeams] = useState<any[]>([]);
   const [isLoadingTeams, setIsLoadingTeams] = useState(false);
 
   const fetchTeams = useCallback(async () => {
+    if (!currentUser) return;
     setIsLoadingTeams(true);
     try {
       const data = await api.teams.list(String(currentUser.id));
@@ -99,15 +158,17 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     } finally {
       setIsLoadingTeams(false);
     }
-  }, [currentUser.id]);
+  }, [currentUser?.id]);
 
   const createTeam = async (name: string, color: string) => {
+    if (!currentUser) throw new Error("Must be logged in to create a team");
     const team = await api.teams.create({ name, color, owner_id: String(currentUser.id) });
     await fetchTeams();
     return team;
   };
 
   const joinTeam = async (code: string) => {
+    if (!currentUser) throw new Error("Must be logged in to join a team");
     const team = await api.teams.join({ code, user_id: String(currentUser.id) });
     await fetchTeams();
     return team;
@@ -130,6 +191,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   const [localRootHandle, setLocalRootHandle] = useState<FileSystemDirectoryHandle | null>(null);
   const [localFileTree, setLocalFileTree] = useState<FileNode | null>(null);
+
+  const [sidebarLeftWidth, setSidebarLeftWidth] = useState(240);
+  const [sidebarRightWidth, setSidebarRightWidth] = useState(246);
+  const [terminalHeight, setTerminalHeight] = useState(280);
 
   // Connect WebSocket when project changes
   React.useEffect(() => {
@@ -187,6 +252,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   }, [activeTabId]);
 
   const sendMessage = useCallback((text: string) => {
+    if (!currentUser) return;
     const msg = {
       userId: String(currentUser.id), userName: currentUser.name, color: (currentUser as any).color || '#2dd4bf', text, timestamp: Date.now(),
     };
@@ -206,6 +272,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const broadcastCursor = useCallback((tabId: string, line: number, col: number) => {
+    if (!currentUser) return;
     if (wsRef.current?.readyState === WebSocket.OPEN) {
       wsRef.current.send(JSON.stringify({
         type: 'cursor',
@@ -373,8 +440,72 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     ]);
   }, [tabs, activeTabId]);
 
+  const predictOutput = useCallback(async () => {
+    setTerminalOpen(true);
+    const activeTab = tabs.find(t => t.id === activeTabId);
+    if (!activeTab) {
+      setTerminalOutput(["❌ Error: No active file"]);
+      return;
+    }
+
+    const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
+    if (!apiKey) {
+      setTerminalOutput(["❌ Error: Missing API key. Please check your .env file."]);
+      return;
+    }
+
+    setTerminalOutput(["🤖 AI is thinking..."]);
+
+    try {
+      const genAI = new GoogleGenerativeAI(apiKey);
+      const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+
+      const promptText = `You are a code execution engine.
+Given this code, predict the exact terminal output ONLY.
+Do not explain unless asked.
+
+Code:
+${activeTab.content || "console.log('No code provided');"}`;
+
+      const result = await model.generateContent(promptText);
+      const response = await result.response;
+      let predictedOutput = response.text();
+
+      // Clean up markdown code blocks if the AI includes them
+      predictedOutput = predictedOutput.replace(/^\s*```[a-zA-Z]*\n?/g, '').replace(/\n?```\s*$/g, '').trim();
+
+      const lines = predictedOutput.split('\n');
+      setTerminalOutput(["Microsoft Windows [Version 10.0.19045.5011]", "(c) Microsoft Corporation. All rights reserved.", "", ...lines]);
+
+    } catch (err: any) {
+      console.error("Gemini API Error:", err);
+      setTerminalOutput([`❌ Error: ${err.message || "Failed to get prediction"}`]);
+    }
+  }, [tabs, activeTabId]);
+
   const closeTerminal = useCallback(() => {
     setTerminalOpen(false);
+  }, []);
+
+  const sendTerminalCommand = useCallback((cmd: string) => {
+    if (!cmd.trim()) return;
+    
+    // Add the command to output with CMD style prompt
+    setTerminalOutput(prev => [...prev, `C:\\HiveHub\\projects> ${cmd}`]);
+    
+    // Simple simulated responses
+    const lowerCmd = cmd.toLowerCase();
+    if (lowerCmd === 'cls' || lowerCmd === 'clear') {
+      setTerminalOutput(["Microsoft Windows [Version 10.0.19045.5011]", "(c) Microsoft Corporation. All rights reserved.", ""]);
+    } else if (lowerCmd === 'dir' || lowerCmd === 'ls') {
+      setTerminalOutput(prev => [...prev, " Volume in drive C has no label.", " Volume Serial Number is BADA-5555", "", " Directory of C:\\HiveHub\\projects", "", "04/12/2026  10:00 PM    <DIR>          .", "04/12/2026  10:00 PM    <DIR>          ..", "04/12/2026  09:00 PM             1,024 index.js", "04/12/2026  09:00 PM               512 readme.md", "               2 File(s)          1,536 bytes", "               2 Dir(s)  50,000,000,000 bytes free", ""]);
+    } else if (lowerCmd === 'exit') {
+      setTerminalOpen(false);
+    } else if (lowerCmd === 'help') {
+      setTerminalOutput(prev => [...prev, "For more information on a specific command, type HELP command-name", "CLS            Clears the screen.", "DIR            Displays a list of files and subdirectories in a directory.", "EXIT           Quits the CMD.EXE program (command interpreter).", "HELP           Provides Help information for Windows commands.", ""]);
+    } else {
+      setTerminalOutput(prev => [...prev, `'${cmd}' is not recognized as an internal or external command,`, "operable program or batch file.", ""]);
+    }
   }, []);
 
   return (
@@ -385,8 +516,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       activeProjectId, activeProjectFiles, setActiveProject,
       localRootHandle, localFileTree, openDirectory, openLocalFile,
       teams, isLoadingTeams, fetchTeams, createTeam, createProject, 
-      currentUser, setCurrentUser, joinTeam, broadcastCursor, cursors,
-      terminalOpen, terminalOutput, runCode, closeTerminal,
+      currentUser, joinTeam, broadcastCursor, cursors,
+      terminalOpen, terminalOutput, runCode, predictOutput, closeTerminal, sendTerminalCommand,
+      sidebarLeftWidth, setSidebarLeftWidth, sidebarRightWidth, setSidebarRightWidth, terminalHeight, setTerminalHeight,
+      isGuest, login, logout, continueAsGuest,
     }}>
       {children}
     </Ctx.Provider>

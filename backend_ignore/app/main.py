@@ -272,6 +272,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
 app.include_router(user_routes.router, prefix="/api")
 app.include_router(team_routes.router, prefix="/api")
 app.include_router(project_routes.router, prefix="/api")

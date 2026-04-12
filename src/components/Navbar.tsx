@@ -1,21 +1,14 @@
 import { useState, useRef, useEffect } from 'react';
-import { Bell, Settings, Search, Command, GitBranch, ChevronDown, User as UserIcon } from 'lucide-react';
+import { Bell, Settings, Search, Command, GitBranch, ChevronDown, User as UserIcon, LogOut, LogIn } from 'lucide-react';
 import { useApp } from '@/context/AppContext';
-import type { User } from '@/types';
-
-
-const MOCK_USERS: (User & { initials: string })[] = [
-  { id: '4', name: 'You',      email: 'you@hivehub.dev', initials: 'EK', color: '#2dd4bf' },
-  { id: '1', name: 'Aisha K.', email: 'aisha@hivehub.dev', initials: 'AK', color: '#a78bfa' },
-  { id: '2', name: 'Rajan M.', email: 'rajan@hivehub.dev', initials: 'RM', color: '#34d399' },
-  { id: '3', name: 'Mei L.',   email: 'mei@hivehub.dev',   initials: 'ML', color: '#fb923c' },
-];
+import { Link, useLocation } from 'react-router-dom';
 
 export default function Navbar() {
-  const { currentUser, setCurrentUser, runCode } = useApp();
+  const { currentUser, isGuest, logout, predictOutput } = useApp();
   const [searchFocused] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const location = useLocation();
 
   useEffect(() => {
     function clickAway(e: MouseEvent) {
@@ -27,11 +20,15 @@ export default function Navbar() {
     return () => document.removeEventListener('mousedown', clickAway);
   }, []);
 
-  const curInitial = MOCK_USERS.find(u => String(u.id) === String(currentUser.id))?.initials || '??';
+  const getInitials = (name: string) => {
+    return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+  };
+
+  const curInitial = currentUser ? getInitials(currentUser.name) : '??';
 
   return (
     <header className="navbar">
-      <div className="navbar-logo">
+      <Link to="/" className="navbar-logo" style={{ textDecoration: 'none' }}>
         <div className="logo-hex">
           <svg viewBox="0 0 40 46" fill="none" xmlns="http://www.w3.org/2000/svg" width="24" height="28">
             <path d="M20 1L38 11.5V34.5L20 45L2 34.5V11.5L20 1Z"
@@ -48,13 +45,22 @@ export default function Navbar() {
         </div>
         <span className="logo-text">HIVEHUB</span>
         <div className="logo-badge">BETA</div>
-      </div>
+      </Link>
 
       <nav className="navbar-nav">
-        {['Dashboard', 'Projects', 'Teams', 'Activity'].map((item, i) => (
-          <a key={item} href="#" className={`nav-link ${i===0 ? 'active' : ''}`}>
-            {item}
-          </a>
+        {[
+          { name: 'Dashboard', path: '/dashboard' },
+          { name: 'Editor', path: '/' },
+          { name: 'Teams', path: '/teams' },
+          { name: 'Activity', path: '/activity' }
+        ].map((item) => (
+          <Link 
+            key={item.name} 
+            to={item.path} 
+            className={`nav-link ${location.pathname === item.path ? 'active' : ''}`}
+          >
+            {item.name}
+          </Link>
         ))}
       </nav>
 
@@ -67,21 +73,16 @@ export default function Navbar() {
               console.log('Search:', (e.target as HTMLInputElement).value);
             }
           }}
-/>
+        />
         <div className="search-kbd">
           <Command size={10}/><span>K</span>
         </div>
       </div>
 
       <div className="navbar-actions">
-        <button className="icon-btn">
-         🤖 AI
-
-        </button>
-        <div className="nav-sep"/><button className="run-btn" onClick={runCode}>
+        <button className="run-btn" onClick={predictOutput}>
           ▶ Run
         </button>
-
 
         <button className="icon-btn" title="Branch">
           <GitBranch size={15}/>
@@ -95,49 +96,46 @@ export default function Navbar() {
           <Settings size={15}/>
         </button>
         
-
-        <div className="profile-container" ref={dropdownRef}>
-          <div 
-            className={`profile-trigger ${profileOpen ? 'active' : ''}`} 
-            onClick={() => setProfileOpen(!profileOpen)}
-          >
-            <div className="user-avatar">
-              <span>{curInitial}</span>
-            </div>
-            <ChevronDown size={12} className={`chevron ${profileOpen ? 'up' : ''}`} />
-          </div>
-
-          {profileOpen && (
-            <div className="profile-dropdown">
-              <div className="dropdown-header">
-                <span className="dropdown-title">SWITCH PROFILE</span>
+        {isGuest ? (
+          <button className="btn-primary" style={{ padding: '6px 12px', height: 32, fontSize: 11 }} onClick={logout}>
+            <LogIn size={13} style={{ marginRight: 6 }}/> Sign In
+          </button>
+        ) : (
+          <div className="profile-container" ref={dropdownRef}>
+            <div 
+              className={`profile-trigger ${profileOpen ? 'active' : ''}`} 
+              onClick={() => setProfileOpen(!profileOpen)}
+            >
+              <div className="user-avatar">
+                <span>{curInitial}</span>
               </div>
-              <div className="user-list">
-                {MOCK_USERS.map(user => (
-                  <button 
-                    key={user.id} 
-                    className={`user-item ${String(currentUser.id) === String(user.id) ? 'active' : ''}`}
-                    onClick={() => {
-                      setCurrentUser(user);
-                      setProfileOpen(false);
-                    }}
-                  >
-                    <div className="user-item-avatar">
-                      {user.initials}
-                    </div>
-                    <div className="user-item-info">
-                      <span className="user-item-name">{user.name}</span>
-                      <span className="user-item-email">{user.email}</span>
-                    </div>
+              <ChevronDown size={12} className={`chevron ${profileOpen ? 'up' : ''}`} />
+            </div>
+
+            {profileOpen && currentUser && (
+              <div className="profile-dropdown">
+                <div className="dropdown-header">
+                  <span className="dropdown-title">MY ACCOUNT</span>
+                </div>
+                <div className="user-item active" style={{ cursor: 'default' }}>
+                  <div className="user-item-avatar">
+                    {curInitial}
+                  </div>
+                  <div className="user-item-info">
+                    <span className="user-item-name">{currentUser.name}</span>
+                    <span className="user-item-email">{currentUser.email}</span>
+                  </div>
+                </div>
+                <div className="dropdown-footer">
+                  <button className="dropdown-opt"><UserIcon size={12}/> View Profile</button>
+                  <button className="dropdown-opt" style={{ color: 'var(--red)' }} onClick={logout}>
+                    <LogOut size={12}/> Sign Out
                   </button>
-                ))}
+                </div>
               </div>
-              <div className="dropdown-footer">
-                <button className="dropdown-opt"><UserIcon size={12}/> View Profile</button>
-              </div>
-            </div>
-          )}
-        </div>
+            )}
+          </div>
+        )}
       </div>
     </header>
   );
